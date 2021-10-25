@@ -6,7 +6,30 @@ public class Ticket {
     private String date;
     private String hour;
     private int room;
-    private int seat;
+    private int seat = 0;
+    private boolean discount = false;
+
+    public boolean isDiscount() {
+        return discount;
+    }
+
+    public void setDiscount(boolean discount) {
+        this.discount = discount;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    private String type;
+
+    public void setSeat(int seat) {
+        this.seat = seat;
+    }
 
     public Movie getMovie() {
         return movie;
@@ -52,7 +75,7 @@ public class Ticket {
         return seat;
     }
 
-    public void setSeat(int seat) {
+    public void setSeat(Integer seat) {
         this.seat = seat;
     }
 }

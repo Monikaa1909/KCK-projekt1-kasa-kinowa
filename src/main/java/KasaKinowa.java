@@ -1,8 +1,13 @@
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
+import com.googlecode.lanterna.gui2.Button;
+import com.googlecode.lanterna.gui2.GridLayout;
+import com.googlecode.lanterna.gui2.Label;
+import com.googlecode.lanterna.gui2.Panel;
+import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialog;
-import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
+import com.googlecode.lanterna.gui2.dialogs.TextInputDialog;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import models.Category;
@@ -11,15 +16,19 @@ import models.Movie;
 import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.terminal.Terminal;
-import models.MovieDate;
+import models.Seat;
 import models.Ticket;
 
+import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.color.ColorSpace;
+import java.awt.event.ItemEvent;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.Date;
+import java.util.List;
 
 public class KasaKinowa {
     static Terminal terminal;
@@ -31,77 +40,738 @@ public class KasaKinowa {
 
     static Database db = new Database();
 
+    public static void selectTicket(Ticket ticket, Category c, Movie m, String date, String hour, Seat s){
+        Panel panel = new Panel(new GridLayout(4));
+        GridLayout gridLayout = (GridLayout)panel.getLayoutManager();
+        gridLayout.setHorizontalSpacing(3);
 
-    public static void selectMovieDay(Movie m) throws IOException, SQLException, ParseException {
-        Panel panel = new Panel();
-        panel.setLayoutManager(new LinearLayout(Direction.VERTICAL));
-        panel.setLayoutData(BorderLayout.Location.CENTER);
+        Label title = new Label("Sprawdź, czy dane na Twoim bilecie się zgadzają:");
+        title.setLayoutData(GridLayout.createLayoutData(
+                GridLayout.Alignment.CENTER,
+                GridLayout.Alignment.CENTER,
+                true,
+                false,
+                2,
+                1));
 
-        Label label = new Label("Wybierz dzień, który Cię interesuje:");
+        System.out.println(ticket.getMovie().getTitle() + " " + ticket.getDate() + " " + ticket.getHour() + " " +
+                "" + ticket.getSeat() + " " + ticket.getType() + " " + ticket.isDiscount());
 
+        Button discountYes = new Button("Tak", new Runnable() {
+            @Override
+            public void run() {
+                String input = TextInputDialog.showDialog(gui, "Kod rabatowy", "" +
+                        "   Wprowadź tu swój kod rabatowy:  " +
+                        "", "");
+                if (!input.equals("123")) {
+                    MessageDialog.showMessageDialog(gui, "Wiadomość", "\n   Twój kod rabatowy jest niepoprawny :(    \n", MessageDialogButton.OK);
+                }
+                else {
+//                    selectTicket(){}
+                }
+            }
+        });
 
+        discountYes.setLayoutData(GridLayout.createLayoutData(
+                GridLayout.Alignment.CENTER,
+                GridLayout.Alignment.CENTER,
+                true,
+                false,
+                2,
+                1));
+
+        Button discountNo = new Button("No", new Runnable() {
+            @Override
+            public void run() {
+
+            }
+        });
+        discountNo.setLayoutData(GridLayout.createLayoutData(
+                GridLayout.Alignment.CENTER,
+                GridLayout.Alignment.CENTER,
+                true,
+                false,
+                2,
+                1));
+
+        Button backButton = new Button("Cofnij", new Runnable() {
+            @Override
+            public void run() {
+                ticket.setDiscount(false);
+                selectDiscount(ticket, c, m, date, hour, s);
+            }
+        });
+        backButton.setLayoutData(GridLayout.createLayoutData(
+                GridLayout.Alignment.CENTER,
+                GridLayout.Alignment.CENTER,
+                true,
+                false,
+                1,
+                1));
+
+        Button cancelButton = new Button("Anuluj zakup biletu", new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    ticket.setCategory(null);
+                    ticket.setMovie(null);
+                    ticket.setDate(null);
+                    ticket.setHour(null);
+                    ticket.setSeat(0);
+                    ticket.setType(null);
+                    ticket.setDiscount(false);
+                    start();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        cancelButton.setLayoutData(GridLayout.createLayoutData(
+                GridLayout.Alignment.CENTER,
+                GridLayout.Alignment.CENTER,
+                true,
+                false,
+                1,
+                1));
+
+        panel.addComponent(new EmptySpace().setLayoutData(GridLayout.createHorizontallyFilledLayoutData(4)));
+
+        panel.addComponent(new EmptySpace());
+        panel.addComponent(title);
+        panel.addComponent(new EmptySpace());
+
+        panel.addComponent(new EmptySpace().setLayoutData(GridLayout.createHorizontallyFilledLayoutData(4)));
+
+        panel.addComponent(new EmptySpace());
+        panel.addComponent(discountYes);
+        panel.addComponent(new EmptySpace());
+        panel.addComponent(new EmptySpace());
+        panel.addComponent(discountNo);
+        panel.addComponent(new EmptySpace());
+
+        panel.addComponent(new EmptySpace().setLayoutData(GridLayout.createHorizontallyFilledLayoutData(4)));
+        panel.addComponent(new EmptySpace().setLayoutData(GridLayout.createHorizontallyFilledLayoutData(4)));
+        panel.addComponent(new EmptySpace());
+        panel.addComponent(backButton);
+        panel.addComponent(cancelButton);
+        panel.addComponent(new EmptySpace());
+
+        window.setComponent(panel.withBorder(Borders.doubleLine("Krok 8.")));
+    }
+
+    public static void selectDiscount(Ticket ticket, Category c, Movie m, String date, String hour, Seat s){
+        Panel panel = new Panel(new GridLayout(4));
+        GridLayout gridLayout = (GridLayout)panel.getLayoutManager();
+        gridLayout.setHorizontalSpacing(3);
+
+        Label title = new Label("Czy posiadasz kod rabatowy?");
+        title.setLayoutData(GridLayout.createLayoutData(
+                GridLayout.Alignment.CENTER,
+                GridLayout.Alignment.CENTER,
+                true,
+                false,
+                2,
+                1));
+
+        Button discountYes = new Button("Tak", new Runnable() {
+            @Override
+            public void run() {
+                String input = TextInputDialog.showDialog(gui, "Kod rabatowy", "" +
+                        "   Wprowadź tu swój kod rabatowy:  " +
+                        "", "");
+                if (!input.equals("123")) {
+                    MessageDialog.showMessageDialog(gui, "Wiadomość", "\n   Twój kod rabatowy jest niepoprawny :(    \n", MessageDialogButton.OK);
+                }
+                else {
+                    ticket.setDiscount(true);
+                    selectTicket(ticket, c, m, date, hour, s);
+                }
+            }
+        });
+
+        discountYes.setLayoutData(GridLayout.createLayoutData(
+                GridLayout.Alignment.CENTER,
+                GridLayout.Alignment.CENTER,
+                true,
+                false,
+                2,
+                1));
+
+        Button discountNo = new Button("No", new Runnable() {
+            @Override
+            public void run() {
+                selectTicket(ticket, c, m, date, hour, s);
+            }
+        });
+        discountNo.setLayoutData(GridLayout.createLayoutData(
+                GridLayout.Alignment.CENTER,
+                GridLayout.Alignment.CENTER,
+                true,
+                false,
+                2,
+                1));
+
+        Button backButton = new Button("Cofnij", new Runnable() {
+            @Override
+            public void run() {
+                ticket.setType(null);
+                selectPayment(ticket, c, m, date, hour, s);
+            }
+        });
+        backButton.setLayoutData(GridLayout.createLayoutData(
+                GridLayout.Alignment.CENTER,
+                GridLayout.Alignment.CENTER,
+                true,
+                false,
+                1,
+                1));
+
+        Button cancelButton = new Button("Anuluj zakup biletu", new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    ticket.setCategory(null);
+                    ticket.setMovie(null);
+                    ticket.setDate(null);
+                    ticket.setHour(null);
+                    ticket.setSeat(0);
+                    ticket.setType(null);
+                    start();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        cancelButton.setLayoutData(GridLayout.createLayoutData(
+                GridLayout.Alignment.CENTER,
+                GridLayout.Alignment.CENTER,
+                true,
+                false,
+                1,
+                1));
+
+        panel.addComponent(new EmptySpace().setLayoutData(GridLayout.createHorizontallyFilledLayoutData(4)));
+
+        panel.addComponent(new EmptySpace());
+        panel.addComponent(title);
+        panel.addComponent(new EmptySpace());
+
+        panel.addComponent(new EmptySpace().setLayoutData(GridLayout.createHorizontallyFilledLayoutData(4)));
+
+        panel.addComponent(new EmptySpace());
+        panel.addComponent(discountYes);
+        panel.addComponent(new EmptySpace());
+        panel.addComponent(new EmptySpace());
+        panel.addComponent(discountNo);
+        panel.addComponent(new EmptySpace());
+
+        panel.addComponent(new EmptySpace().setLayoutData(GridLayout.createHorizontallyFilledLayoutData(4)));
+        panel.addComponent(new EmptySpace().setLayoutData(GridLayout.createHorizontallyFilledLayoutData(4)));
+        panel.addComponent(new EmptySpace());
+        panel.addComponent(backButton);
+        panel.addComponent(cancelButton);
+        panel.addComponent(new EmptySpace());
+
+        window.setComponent(panel.withBorder(Borders.doubleLine("Krok 7.")));
+    }
+
+    public static void selectPayment(Ticket ticket, Category c, Movie m, String date, String hour, Seat s){
+        if (ticket.getCategory()==null){System.out.println("Kategoria null");}
+        else{System.out.println(ticket.getCategory().getName().toString());}
+        if (ticket.getMovie()==null){System.out.println("Film null");}
+        else{System.out.println(ticket.getMovie().getTitle().toString());}
+        System.out.println();
+
+        Panel panel = new Panel(new GridLayout(4));
+        GridLayout gridLayout = (GridLayout)panel.getLayoutManager();
+        gridLayout.setHorizontalSpacing(3);
+
+        Label title = new Label("Wybierz rodzaj biletu, który Cię interesuje:");
+        title.setLayoutData(GridLayout.createLayoutData(
+                GridLayout.Alignment.CENTER,
+                GridLayout.Alignment.CENTER,
+                true,
+                false,
+                2,
+                1));
 
         ActionListBox actionListBox = new ActionListBox();
-        List<String> dates = db.getMovieDates(m);
+        actionListBox.setLayoutData(GridLayout.createLayoutData(
+                GridLayout.Alignment.CENTER,
+                GridLayout.Alignment.CENTER,
+                true,
+                false,
+                2,
+                1));
+
+        actionListBox.addItem("Normalny     -   30zł", new Runnable() {
+            @Override
+            public void run() {
+                ticket.setType("Normalny");
+                selectDiscount(ticket, c, m, date, hour, s);
+            }
+        });
+        actionListBox.addItem("Ulgowy       -   20zł", new Runnable() {
+            @Override
+            public void run() {
+                ticket.setType("Ulgowy");
+                selectDiscount(ticket, c, m, date, hour, s);
+            }
+        });
+
+        Button backButton = new Button("Cofnij", new Runnable() {
+            @Override
+            public void run() {
+                ticket.setSeat(0);
+                try {
+                    selectMovieSeat(ticket, c, m, date, hour);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        backButton.setLayoutData(GridLayout.createLayoutData(
+                GridLayout.Alignment.CENTER,
+                GridLayout.Alignment.CENTER,
+                true,
+                false,
+                1,
+                1));
+
+        Button cancelButton = new Button("Anuluj zakup biletu", new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    ticket.setCategory(null);
+                    ticket.setMovie(null);
+                    ticket.setDate(null);
+                    ticket.setHour(null);
+                    ticket.setSeat(0);
+                    start();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        cancelButton.setLayoutData(GridLayout.createLayoutData(
+                GridLayout.Alignment.CENTER,
+                GridLayout.Alignment.CENTER,
+                true,
+                false,
+                1,
+                1));
+
+        panel.addComponent(new EmptySpace().setLayoutData(GridLayout.createHorizontallyFilledLayoutData(4)));
+
+        panel.addComponent(new EmptySpace());
+        panel.addComponent(title);
+        panel.addComponent(new EmptySpace());
+
+        panel.addComponent(new EmptySpace().setLayoutData(GridLayout.createHorizontallyFilledLayoutData(4)));
+
+        panel.addComponent(new EmptySpace());
+        panel.addComponent(actionListBox);
+        panel.addComponent(new EmptySpace());
+
+        panel.addComponent(new EmptySpace().setLayoutData(GridLayout.createHorizontallyFilledLayoutData(4)));
+        panel.addComponent(new EmptySpace().setLayoutData(GridLayout.createHorizontallyFilledLayoutData(4)));
+        panel.addComponent(new EmptySpace());
+        panel.addComponent(backButton);
+        panel.addComponent(cancelButton);
+        panel.addComponent(new EmptySpace());
+
+        window.setComponent(panel.withBorder(Borders.doubleLine("Krok 6.")));
+    }
+
+    public static void selectMovieSeat(Ticket ticket, Category c, Movie m, String date, String hour) throws IOException, SQLException, ParseException {
+        if (ticket.getCategory()==null){System.out.println("Kategoria null");}
+        else{System.out.println(ticket.getCategory().getName().toString());}
+        if (ticket.getMovie()==null){System.out.println("Film null");}
+        else{System.out.println(ticket.getMovie().getTitle().toString());}
+        System.out.println();
+
+        Panel panel = new Panel(new GridLayout(5));
+        GridLayout gridLayout = (GridLayout)panel.getLayoutManager();
+        gridLayout.setHorizontalSpacing(0);
+
+        Label title = new Label("Wybierz miejsce, które Cię interesuje:");
+        title.setLayoutData(GridLayout.createLayoutData(
+                GridLayout.Alignment.CENTER,
+                GridLayout.Alignment.CENTER,
+                false,
+                false,
+                3,
+                1));
+
+        panel.addComponent(new EmptySpace().setLayoutData(GridLayout.createHorizontallyFilledLayoutData(5)));
+
+        panel.addComponent(new EmptySpace());
+        panel.addComponent(title);
+        panel.addComponent(new EmptySpace());
+
+        panel.addComponent(new EmptySpace().setLayoutData(GridLayout.createHorizontallyFilledLayoutData(5)));
+
+        Label ekran = new Label(" ----------------------------- \n" +
+                "|                             |\n" +
+                "|                             |\n" +
+                "|        TU JEST EKRAN        |\n" +
+                "|                             |\n" +
+                "|                             |\n" +
+                "`-----------------------------'");
+        ekran.setLayoutData(GridLayout.createLayoutData(
+                GridLayout.Alignment.CENTER,
+                GridLayout.Alignment.CENTER,
+                true,
+                false,
+                5,
+                1));
+        ekran.setForegroundColor(TextColor.ANSI.GREEN);
+        ekran.setBackgroundColor(TextColor.ANSI.BLACK);
+        panel.addComponent(ekran.withBorder(Borders.doubleLineReverseBevel()));
+        panel.addComponent(new EmptySpace());
+        panel.addComponent(new EmptySpace().setLayoutData(GridLayout.createHorizontallyFilledLayoutData(5)));
+        panel.addComponent(new EmptySpace());
+        int i = 1;
+        List<Seat> seats = db.getSeats(ticket.getMovie(), ticket.getDate().toString(), ticket.getHour().toString());
+        for (Seat s: seats) {
+            if (s.isAvaliability() == false) {
+                Button button = new Button("MIEJSCE " + s.getSeat(), new Runnable() {
+                    @Override
+                    public void run() {
+                        MessageDialog.showMessageDialog(gui, "Wiadomość", "\n   To miejsce jest już zarezerwowane :(    \n" +
+                                "   Spróbuj wybrać inne!    \n", MessageDialogButton.OK);
+                    }
+                });
+                button.setLayoutData(GridLayout.createLayoutData(
+                        GridLayout.Alignment.CENTER,
+                        GridLayout.Alignment.CENTER,
+                        true,
+                        false,
+                        1,
+                        1));
+
+                panel.addComponent(button.withBorder(Borders.singleLineReverseBevel()));
+            }
+
+            else {
+                Button button = new Button("MIEJSCE " + s.getSeat(), new Runnable() {
+                    @Override
+                    public void run() {
+                        ticket.setSeat(s.getSeat());
+                        selectPayment(ticket, c, m, date, hour, s);
+                    }
+                });
+                button.setLayoutData(GridLayout.createLayoutData(
+                        GridLayout.Alignment.CENTER,
+                        GridLayout.Alignment.CENTER,
+                        true,
+                        false,
+                        1,
+                        1));
+
+                panel.addComponent(button.withBorder(Borders.doubleLineReverseBevel()));
+            }
+
+            if (i == 3){
+                panel.addComponent(new EmptySpace());
+                panel.addComponent(new EmptySpace());
+            }
+            else if (i == 6 ){
+                panel.addComponent(new EmptySpace());
+            }
+            i++;
+        }
+
+        Button backButton = new Button("Cofnij", new Runnable() {
+            @Override
+            public void run() {
+                ticket.setHour(null);
+                try {
+                    selectMovieHour(ticket, c, m, date);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        backButton.setLayoutData(GridLayout.createLayoutData(
+                GridLayout.Alignment.CENTER,
+                GridLayout.Alignment.CENTER,
+                true,
+                false,
+                1,
+                1));
+
+        Button cancelButton = new Button("Anuluj zakup biletu", new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    ticket.setCategory(null);
+                    ticket.setMovie(null);
+                    ticket.setDate(null);
+                    ticket.setHour(null);
+                    start();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        cancelButton.setLayoutData(GridLayout.createLayoutData(
+                GridLayout.Alignment.CENTER,
+                GridLayout.Alignment.CENTER,
+                true,
+                false,
+                2,
+                1));
+
+        panel.addComponent(new EmptySpace().setLayoutData(GridLayout.createHorizontallyFilledLayoutData(5)));
+        panel.addComponent(new EmptySpace().setLayoutData(GridLayout.createHorizontallyFilledLayoutData(5)));
+        panel.addComponent(new EmptySpace());
+        panel.addComponent(backButton);
+        panel.addComponent(cancelButton);
+        panel.addComponent(new EmptySpace());
+
+        window.setComponent(panel.withBorder(Borders.doubleLine("Krok 5.")));
+    }
+
+    public static void selectMovieHour(Ticket ticket, Category c, Movie m, String date) throws IOException, SQLException, ParseException {
+        if (ticket.getCategory()==null){System.out.println("Kategoria null");}
+        else{System.out.println(ticket.getCategory().getName().toString());}
+        if (ticket.getMovie()==null){System.out.println("Film null");}
+        else{System.out.println(ticket.getMovie().getTitle().toString());}
+        System.out.println();
+
+        Panel panel = new Panel(new GridLayout(4));
+        GridLayout gridLayout = (GridLayout)panel.getLayoutManager();
+        gridLayout.setHorizontalSpacing(3);
+
+        Label title = new Label("Wybierz godzinę, która Cię interesuje:");
+        title.setLayoutData(GridLayout.createLayoutData(
+                GridLayout.Alignment.CENTER,
+                GridLayout.Alignment.CENTER,
+                true,
+                false,
+                2,
+                1));
+
+        ActionListBox actionListBox = new ActionListBox();
+        actionListBox.setLayoutData(GridLayout.createLayoutData(
+                GridLayout.Alignment.CENTER,
+                GridLayout.Alignment.CENTER,
+                true,
+                false,
+                2,
+                1));
+
+        List<String> hours = db.getMovieHours(ticket.getMovie(), ticket.getDate().toString());
+        for (String h : hours) {
+            actionListBox.addItem(h, new Runnable() {
+                @Override
+                public void run() {
+                    ticket.setHour(h);
+                    try {
+                        selectMovieSeat(ticket, c, m, date, h);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    } catch (ParseException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }
+
+        Button backButton = new Button("Cofnij", new Runnable() {
+            @Override
+            public void run() {
+                ticket.setDate(null);
+                try {
+                    selectMovieDay(ticket, c, m);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        backButton.setLayoutData(GridLayout.createLayoutData(
+                GridLayout.Alignment.CENTER,
+                GridLayout.Alignment.CENTER,
+                true,
+                false,
+                1,
+                1));
+
+        Button cancelButton = new Button("Anuluj zakup biletu", new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    ticket.setCategory(null);
+                    ticket.setMovie(null);
+                    ticket.setDate(null);
+                    start();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        cancelButton.setLayoutData(GridLayout.createLayoutData(
+                GridLayout.Alignment.CENTER,
+                GridLayout.Alignment.CENTER,
+                true,
+                false,
+                1,
+                1));
+
+        panel.addComponent(new EmptySpace().setLayoutData(GridLayout.createHorizontallyFilledLayoutData(4)));
+
+        panel.addComponent(new EmptySpace());
+        panel.addComponent(title);
+        panel.addComponent(new EmptySpace());
+
+        panel.addComponent(new EmptySpace().setLayoutData(GridLayout.createHorizontallyFilledLayoutData(4)));
+
+        panel.addComponent(new EmptySpace());
+        panel.addComponent(actionListBox);
+        panel.addComponent(new EmptySpace());
+
+        panel.addComponent(new EmptySpace().setLayoutData(GridLayout.createHorizontallyFilledLayoutData(4)));
+        panel.addComponent(new EmptySpace().setLayoutData(GridLayout.createHorizontallyFilledLayoutData(4)));
+        panel.addComponent(new EmptySpace());
+        panel.addComponent(backButton);
+        panel.addComponent(cancelButton);
+        panel.addComponent(new EmptySpace());
+
+        window.setComponent(panel.withBorder(Borders.doubleLine("Krok 4.")));
+    }
+
+    public static void selectMovieDay(Ticket ticket, Category c, Movie m) throws IOException, SQLException, ParseException {
+        if (ticket.getCategory()==null){System.out.println("Kategoria null");}
+        else{System.out.println(ticket.getCategory().getName().toString());}
+        if (ticket.getMovie()==null){System.out.println("Film null");}
+        else{System.out.println(ticket.getMovie().getTitle().toString());}
+        System.out.println();
+
+        Panel panel = new Panel(new GridLayout(4));
+        GridLayout gridLayout = (GridLayout)panel.getLayoutManager();
+        gridLayout.setHorizontalSpacing(3);
+
+        Label title = new Label("Wybierz dzień, który Cię interesuje:");
+        title.setLayoutData(GridLayout.createLayoutData(
+                GridLayout.Alignment.CENTER,
+                GridLayout.Alignment.CENTER,
+                true,
+                false,
+                2,
+                1));
+
+        ActionListBox actionListBox = new ActionListBox();
+        actionListBox.setLayoutData(GridLayout.createLayoutData(
+                GridLayout.Alignment.CENTER,
+                GridLayout.Alignment.CENTER,
+                true,
+                false,
+                2,
+                1));
+
+        List<String> dates = db.getMovieDates(ticket.getMovie());
         for (String d : dates) {
             actionListBox.addItem(d, new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        selectMovieHour(m, d);
+                        ticket.setDate(d);
+                        selectMovieHour(ticket, c, m, d);
                     } catch (IOException | ParseException e) {
                         e.printStackTrace();
                     } catch (SQLException e) {
                         e.printStackTrace();
                     }
-//                    Date date10 = new SimpleDateFormat("YYYY-MM-dd").parse(dateString);
-
-                    // zapis danych biletu
                 }
             });
         }
 
+        Button backButton = new Button("Cofnij", new Runnable() {
+            @Override
+            public void run() {
+                ticket.setMovie(null);
+                selectMovie(ticket, c);
+            }
+        });
+        backButton.setLayoutData(GridLayout.createLayoutData(
+                GridLayout.Alignment.CENTER,
+                GridLayout.Alignment.CENTER,
+                true,
+                false,
+                1,
+                1));
+
+        Button cancelButton = new Button("Anuluj zakup biletu", new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    ticket.setCategory(null);
+                    ticket.setMovie(null);
+                    start();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        cancelButton.setLayoutData(GridLayout.createLayoutData(
+                GridLayout.Alignment.CENTER,
+                GridLayout.Alignment.CENTER,
+                true,
+                false,
+                1,
+                1));
+
+        panel.addComponent(new EmptySpace().setLayoutData(GridLayout.createHorizontallyFilledLayoutData(4)));
 
         panel.addComponent(new EmptySpace());
+        panel.addComponent(title);
         panel.addComponent(new EmptySpace());
-        panel.addComponent(label);
+
+        panel.addComponent(new EmptySpace().setLayoutData(GridLayout.createHorizontallyFilledLayoutData(4)));
+
         panel.addComponent(new EmptySpace());
         panel.addComponent(actionListBox);
+        panel.addComponent(new EmptySpace());
+
+        panel.addComponent(new EmptySpace().setLayoutData(GridLayout.createHorizontallyFilledLayoutData(4)));
+        panel.addComponent(new EmptySpace().setLayoutData(GridLayout.createHorizontallyFilledLayoutData(4)));
+        panel.addComponent(new EmptySpace());
+        panel.addComponent(backButton);
+        panel.addComponent(cancelButton);
+        panel.addComponent(new EmptySpace());
+
+
         window.setComponent(panel.withBorder(Borders.doubleLine("Krok 3.")));
     }
 
-    public static void selectMovieHour(Movie m, String date) throws IOException, SQLException, ParseException {
-        Panel panel = new Panel();
-        panel.setLayoutManager(new LinearLayout(Direction.VERTICAL));
-        panel.setLayoutData(BorderLayout.Location.CENTER);
+    public static void selectMovie(Ticket ticket, Category c) {
+        if (ticket.getCategory()==null){System.out.println("Kategoria null");}
+        else{System.out.println(ticket.getCategory().getName().toString());}
+        if (ticket.getMovie()==null){System.out.println("Film null");}
+        else{System.out.println(ticket.getMovie().getTitle().toString());}
+        System.out.println();
 
-        Label label = new Label("Wybierz godzinę, która Cię interesuje:");
-
-        ActionListBox actionListBox = new ActionListBox();
-        List<String> hours = db.getMovieHours(m, date);
-
-        for (String h : hours) {
-            actionListBox.addItem(h, new Runnable() {
-                @Override
-                public void run() {
-//                     select...();
-//
-
-                    // zapis danych biletu
-                }
-            });
-        }
-
-
-        panel.addComponent(new EmptySpace());
-        panel.addComponent(new EmptySpace());
-        panel.addComponent(label);
-        panel.addComponent(new EmptySpace());
-        panel.addComponent(actionListBox);
-        window.setComponent(panel.withBorder(Borders.doubleLine("Krok 4.")));
-    }
-
-    public static void selectMovie(Ticket ticket) {
         Panel panel = new Panel(new GridLayout(4));
         GridLayout gridLayout = (GridLayout)panel.getLayoutManager();
         gridLayout.setHorizontalSpacing(3);
@@ -124,14 +794,14 @@ public class KasaKinowa {
                 2,
                 1));
 
-        List<Movie> movies = db.getMovies(ticket.getCategory().getName());
+        List<Movie> movies = db.getMovies(c.getName().toString());
         for (Movie m : movies) {
             actionListBox.addItem(m.getTitle(), new Runnable() {
                 @Override
                 public void run() {
                     try {
                         ticket.setMovie(m);
-                        selectMovieDay(m);
+                        selectMovieDay(ticket, c, m);
                     } catch (IOException | SQLException | ParseException e) {
                         e.printStackTrace();
                     }
@@ -158,6 +828,8 @@ public class KasaKinowa {
             @Override
             public void run() {
                 try {
+                    ticket.setCategory(null);
+
                     start();
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -191,12 +863,17 @@ public class KasaKinowa {
         panel.addComponent(cancelButton);
         panel.addComponent(new EmptySpace());
 
-
         window.setComponent(panel.withBorder(Borders.doubleLine("Krok 2.")));
     }
 
 
     public static void selectCategory(Ticket ticket) {
+        if (ticket.getCategory()==null){System.out.println("Kategoria null");}
+        else{System.out.println(ticket.getCategory().getName().toString());}
+        if (ticket.getMovie()==null){System.out.println("Film null");}
+        else{System.out.println(ticket.getMovie().getTitle().toString());}
+        System.out.println();
+
         Panel panel = new Panel(new GridLayout(4));
         GridLayout gridLayout = (GridLayout)panel.getLayoutManager();
         gridLayout.setHorizontalSpacing(3);
@@ -225,7 +902,7 @@ public class KasaKinowa {
                 @Override
                 public void run() {
                     ticket.setCategory(c);
-                    selectMovie(ticket);
+                    selectMovie(ticket, c);
                 }
             });
         }

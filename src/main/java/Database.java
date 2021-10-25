@@ -1,13 +1,9 @@
 import models.Category;
 import models.Movie;
-import models.MovieDate;
+import models.Seat;
 
 import java.sql.*;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import java.sql.Connection;
@@ -15,7 +11,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 
 import java.sql.SQLException;
-import java.util.Locale;
 
 public class Database {
     private Connection connection = null;
@@ -130,5 +125,24 @@ public class Database {
         }
 
         return hours;
+    }
+
+    public List<Seat> getSeats (Movie movie, String date, String hour) throws SQLException {
+        List<Seat> seats = new ArrayList<>();
+        try {
+            ResultSet rs = statement.executeQuery("select seat, availability from Avaliability left join Movie on Movie.movieID = Avaliability.movieID where title = \'" + movie.getTitle() + "\' and data = \'" + date + "\' and hour = \'" + hour + "\'");
+
+            while (rs.next()) {
+                Seat seat = new Seat();
+                seat.setSeat(rs.getInt("seat"));
+                seat.setAvaliability(rs.getBoolean("availability"));
+                seats.add(seat);
+
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return seats;
     }
 }
