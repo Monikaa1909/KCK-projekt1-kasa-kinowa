@@ -5,9 +5,33 @@ public class Ticket {
     private Category category;
     private String date;
     private String hour;
-    private int room;
+    private int room = 0;
     private int seat = 0;
     private boolean discount = false;
+    private int price;
+
+    public int calculatePrice() {
+        if (type.equals("Ulgowy")) {
+            if (discount == false)
+                return 20;
+            else
+                return 15;
+        }
+        else {
+            if (discount == false)
+                return 30;
+            else
+                return 25;
+        }
+    }
+
+    public int getPrice() {
+        return price;
+    }
+
+    public void setPrice(int price) {
+        this.price = price;
+    }
 
     public boolean isDiscount() {
         return discount;

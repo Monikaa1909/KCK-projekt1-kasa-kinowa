@@ -2,6 +2,15 @@ package models;
 
 public class Seat {
     private int seat;
+    private int room;
+
+    public int getRoom() {
+        return room;
+    }
+
+    public void setRoom(int room) {
+        this.room = room;
+    }
 
     public boolean isAvaliability() {
         return avaliability;

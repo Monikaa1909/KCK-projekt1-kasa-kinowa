@@ -1,6 +1,7 @@
 import models.Category;
 import models.Movie;
 import models.Seat;
+import models.Ticket;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -130,10 +131,11 @@ public class Database {
     public List<Seat> getSeats (Movie movie, String date, String hour) throws SQLException {
         List<Seat> seats = new ArrayList<>();
         try {
-            ResultSet rs = statement.executeQuery("select seat, availability from Avaliability left join Movie on Movie.movieID = Avaliability.movieID where title = \'" + movie.getTitle() + "\' and data = \'" + date + "\' and hour = \'" + hour + "\'");
+            ResultSet rs = statement.executeQuery("select room, seat, availability from Avaliability left join Movie on Movie.movieID = Avaliability.movieID where title = \'" + movie.getTitle() + "\' and data = \'" + date + "\' and hour = \'" + hour + "\'");
 
             while (rs.next()) {
                 Seat seat = new Seat();
+                seat.setRoom(rs.getInt("room"));
                 seat.setSeat(rs.getInt("seat"));
                 seat.setAvaliability(rs.getBoolean("availability"));
                 seats.add(seat);
@@ -144,5 +146,16 @@ public class Database {
         }
 
         return seats;
+    }
+    public void confirmTicket (Ticket ticket) throws SQLException {
+        try {
+            statement.execute("update Avaliability\n" +
+                    "set availability = false\n" +
+                    "where data = \'" + ticket.getDate() + "\' and room = \'" + ticket.getRoom() + "\' and seat = \'"
+                    + ticket.getSeat() + "\' and hour = \'" + ticket.getHour() + "\'");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
     }
 }
