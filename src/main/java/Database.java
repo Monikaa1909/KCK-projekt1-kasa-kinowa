@@ -1,8 +1,17 @@
+import com.sun.jna.platform.FileUtils;
 import models.Category;
 import models.Movie;
 import models.Seat;
 import models.Ticket;
+import net.harawata.appdirs.AppDirs;
+import net.harawata.appdirs.AppDirsFactory;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,10 +27,33 @@ public class Database {
     private Statement statement;
 
     public Database () {
+        AppDirs appDirs = AppDirsFactory.getInstance();
+        File file = new File(
+                appDirs.getSiteDataDir(
+                        "KasaKinowa",
+                        "1.0.0",
+                        "Monika Slowikowska"
+                ),
+                "database.sqlite"
+        );
+
+
+        if (!file.exists()) {
+            file.getParentFile().mkdirs();
+
+            InputStream stream = getClass().getResourceAsStream("database.sqlite");
+            try {
+                assert stream != null;
+                Files.copy(stream, Paths.get(file.getAbsolutePath()));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
         try
         {
             // create a database connection
-            connection = DriverManager.getConnection("jdbc:sqlite:database.sqlite");
+            connection = DriverManager.getConnection("jdbc:sqlite:" + file.getAbsolutePath());
             statement = connection.createStatement();
             statement.setQueryTimeout(30);  // set timeout to 30 sec.
         }

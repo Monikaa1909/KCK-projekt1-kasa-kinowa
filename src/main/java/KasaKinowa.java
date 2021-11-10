@@ -85,6 +85,7 @@ public class KasaKinowa {
                 "───▐██──▀▀──▀▀──██▌───\n" +
                 "──▄████▄──▐▌──▄████▄──\n");
 
+
         picture.setLayoutData(GridLayout.createLayoutData(
                 GridLayout.Alignment.CENTER,
                 GridLayout.Alignment.CENTER,
